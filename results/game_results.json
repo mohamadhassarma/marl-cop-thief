@@ -1,0 +1,102 @@
+{
+  "group_name": "YOUR_GROUP_NAME",
+  "cop_mcp_url": "",
+  "thief_mcp_url": "",
+  "timezone": "Asia/Jerusalem",
+  "sub_games": [
+    {
+      "sub_game_index": 0,
+      "result": "thief_win",
+      "moves_taken": 25,
+      "cop_score": 5,
+      "thief_score": 10,
+      "cop_start": {
+        "row": 1,
+        "col": 2
+      },
+      "thief_start": {
+        "row": 0,
+        "col": 1
+      }
+    },
+    {
+      "sub_game_index": 1,
+      "result": "thief_win",
+      "moves_taken": 25,
+      "cop_score": 5,
+      "thief_score": 10,
+      "cop_start": {
+        "row": 4,
+        "col": 3
+      },
+      "thief_start": {
+        "row": 1,
+        "col": 3
+      }
+    },
+    {
+      "sub_game_index": 2,
+      "result": "thief_win",
+      "moves_taken": 25,
+      "cop_score": 5,
+      "thief_score": 10,
+      "cop_start": {
+        "row": 3,
+        "col": 4
+      },
+      "thief_start": {
+        "row": 2,
+        "col": 1
+      }
+    },
+    {
+      "sub_game_index": 3,
+      "result": "thief_win",
+      "moves_taken": 25,
+      "cop_score": 5,
+      "thief_score": 10,
+      "cop_start": {
+        "row": 0,
+        "col": 0
+      },
+      "thief_start": {
+        "row": 3,
+        "col": 2
+      }
+    },
+    {
+      "sub_game_index": 4,
+      "result": "thief_win",
+      "moves_taken": 25,
+      "cop_score": 5,
+      "thief_score": 10,
+      "cop_start": {
+        "row": 0,
+        "col": 1
+      },
+      "thief_start": {
+        "row": 4,
+        "col": 1
+      }
+    },
+    {
+      "sub_game_index": 5,
+      "result": "cop_win",
+      "moves_taken": 4,
+      "cop_score": 20,
+      "thief_score": 5,
+      "cop_start": {
+        "row": 2,
+        "col": 1
+      },
+      "thief_start": {
+        "row": 3,
+        "col": 0
+      }
+    }
+  ],
+  "totals": {
+    "cop": 45,
+    "thief": 55
+  }
+}
