@@ -1,0 +1,19 @@
+{
+  "version": "1.00",
+  "rate_limits": {
+    "default": {
+      "requests_per_minute": 30,
+      "requests_per_hour": 500,
+      "concurrent_max": 5,
+      "retry_after_seconds": 30,
+      "max_retries": 3
+    },
+    "anthropic": {
+      "requests_per_minute": 20,
+      "requests_per_hour": 300,
+      "concurrent_max": 3,
+      "retry_after_seconds": 60,
+      "max_retries": 3
+    }
+  }
+}

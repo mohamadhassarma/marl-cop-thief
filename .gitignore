@@ -1,0 +1,38 @@
+# Secrets and credentials
+.env
+config/gmail_token.json
+config/gmail_credentials.json
+*.key
+*.pem
+credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# uv / venv
+.venv/
+.uv/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Results and outputs (large files)
+results/*.npy
+results/*.pkl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

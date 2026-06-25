@@ -1,0 +1,29 @@
+{
+  "version": "1.00",
+  "grid": {
+    "size": [5, 5]
+  },
+  "game": {
+    "num_sub_games": 6,
+    "max_moves_per_sub_game": 25
+  },
+  "cop": {
+    "max_barriers_per_sub_game": 5
+  },
+  "scoring": {
+    "cop_win": 20,
+    "thief_win": 10,
+    "cop_loss": 5,
+    "thief_loss": 5
+  },
+  "reporting": {
+    "target_email": "rmisegal+uoh26b@gmail.com",
+    "group_name": "YOUR_GROUP_NAME",
+    "timezone": "Asia/Jerusalem"
+  },
+  "llm": {
+    "model": "claude-sonnet-4-6",
+    "max_tokens": 1000,
+    "provider": "anthropic"
+  }
+}
