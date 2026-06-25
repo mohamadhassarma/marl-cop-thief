@@ -1,4 +1,4 @@
-"""Strategy module — BFS pathfinding for Cop, evasion logic for Thief."""
+"""Strategy module — BFS pathfinding for Cop, evasion logic for Thief (8-way)."""
 
 from collections import deque
 from cop_thief.services.grid import Grid, Position
@@ -10,9 +10,7 @@ def bfs_shortest_path(
     start: Position,
     goal: Position,
 ) -> list[Direction]:
-    """Find shortest path from start to goal using BFS.
-
-    Respects grid bounds and barriers. Returns empty list if no path found.
+    """Find shortest path from start to goal using BFS (8-way movement).
 
     Args:
         grid: Current game grid.
@@ -45,7 +43,7 @@ def bfs_shortest_path(
             visited.add(neighbor)
             queue.append((neighbor, new_path))
 
-    return []  # No path found (thief is fully blocked)
+    return []
 
 
 def cop_best_move(
@@ -53,9 +51,7 @@ def cop_best_move(
     cop_pos: Position,
     thief_pos: Position,
 ) -> Direction | None:
-    """Return the best move direction for the Cop using BFS.
-
-    Finds shortest path to Thief. Returns None if already adjacent or no path.
+    """Return best move for Cop using BFS (8-way).
 
     Args:
         grid: Current game grid.
@@ -63,7 +59,7 @@ def cop_best_move(
         thief_pos: Thief's current position.
 
     Returns:
-        Best Direction to move, or None if no move needed/possible.
+        Best Direction to move, or None if no path.
     """
     path = bfs_shortest_path(grid, cop_pos, thief_pos)
     if path:
@@ -77,10 +73,10 @@ def cop_best_barrier(
     thief_pos: Position,
     barriers_remaining: int,
 ) -> Position | None:
-    """Find the best barrier position to cut off the Thief's escape.
+    """Find best barrier position to cut off Thief's escape.
 
-    Identifies the Thief's most likely escape directions and blocks the
-    cell that would maximally reduce their movement options.
+    Per inter-group rules: Cop walls the cell it VACATES.
+    Returns the cell the Cop should vacate (which becomes the barrier).
 
     Args:
         grid: Current game grid.
@@ -89,7 +85,7 @@ def cop_best_barrier(
         barriers_remaining: How many barriers Cop can still place.
 
     Returns:
-        Best Position for barrier, or None if no good barrier exists.
+        Position to vacate (becomes barrier), or None.
     """
     if barriers_remaining <= 0:
         return None
@@ -105,7 +101,6 @@ def cop_best_barrier(
             continue
         if candidate == cop_pos:
             continue
-        # Score: prefer cells that are farther from Cop (cuts escape routes)
         dist_from_cop = abs(candidate.row - cop_pos.row) + abs(candidate.col - cop_pos.col)
         if dist_from_cop > best_score:
             best_score = dist_from_cop
@@ -119,10 +114,9 @@ def thief_best_move(
     thief_pos: Position,
     cop_pos: Position,
 ) -> Direction:
-    """Return the best move direction for the Thief to maximize survival.
+    """Return best move for Thief using Chebyshev max-distance evasion.
 
-    Picks the move that maximizes Manhattan distance from Cop while
-    avoiding barriers and walls. Falls back to any valid move.
+    Uses 8-way movement to maximize distance from Cop.
 
     Args:
         grid: Current game grid.
@@ -133,7 +127,7 @@ def thief_best_move(
         Best Direction to move away from Cop.
     """
     best_dir = None
-    best_dist = -1
+    best_score = -1
 
     for direction, (dr, dc) in DIRECTION_DELTAS.items():
         neighbor = Position(thief_pos.row + dr, thief_pos.col + dc)
@@ -141,22 +135,24 @@ def thief_best_move(
             continue
         if grid.is_barrier(neighbor):
             continue
-        dist = abs(neighbor.row - cop_pos.row) + abs(neighbor.col - cop_pos.col)
-        # Prefer moves that keep future options open (not dead ends)
+        # Chebyshev distance
+        dist = max(
+            abs(neighbor.row - cop_pos.row),
+            abs(neighbor.col - cop_pos.col)
+        )
         future_options = _count_free_neighbors(grid, neighbor, cop_pos)
         score = dist * 10 + future_options
-        if score > best_dist:
-            best_dist = score
+        if score > best_score:
+            best_score = score
             best_dir = direction
 
-    # Fallback: any valid move
     if best_dir is None:
         for direction, (dr, dc) in DIRECTION_DELTAS.items():
             neighbor = Position(thief_pos.row + dr, thief_pos.col + dc)
             if grid.is_valid(neighbor) and not grid.is_barrier(neighbor):
                 return direction
 
-    return best_dir or Direction.UP
+    return best_dir or Direction.DOWN
 
 
 def _count_free_neighbors(
@@ -164,14 +160,12 @@ def _count_free_neighbors(
     pos: Position,
     cop_pos: Position,
 ) -> int:
-    """Count how many free (non-barrier, non-cop) neighbors a position has.
-
-    Used to avoid moving into dead ends.
+    """Count free neighbors — used to avoid dead ends.
 
     Args:
         grid: Current game grid.
         pos: Position to evaluate.
-        cop_pos: Cop's current position (treated as blocked).
+        cop_pos: Cop position (treated as blocked).
 
     Returns:
         Number of free neighboring cells.
@@ -185,19 +179,37 @@ def _count_free_neighbors(
     return count
 
 
+def is_trapped(grid: Grid, pos: Position) -> bool:
+    """Check if an agent is completely trapped (no free neighbors).
+
+    Args:
+        grid: Current game grid.
+        pos: Position to check.
+
+    Returns:
+        True if agent has no valid moves.
+    """
+    for _, (dr, dc) in DIRECTION_DELTAS.items():
+        neighbor = Position(pos.row + dr, pos.col + dc)
+        if grid.is_valid(neighbor) and not grid.is_barrier(neighbor):
+            return False
+    return True
+
+
 def observation_to_positions(observation: dict) -> tuple[Position, Position]:
     """Parse agent observation dict into Position objects.
 
     Args:
-        observation: Dict from get_cop_observation() or get_thief_observation().
+        observation: Dict from game engine or inter-group protocol.
 
     Returns:
         Tuple of (my_position, opponent_position).
     """
-    my = observation.get("my_position") or observation.get("my_position", {})
+    my = observation.get("my_position") or observation.get("cop", {})
     opp = (
         observation.get("opponent_position")
-        or observation.get("cop_last_known", {})
+        or observation.get("cop_last_known")
+        or observation.get("thief", {})
     )
     my_pos = Position(my["row"], my["col"])
     opp_pos = Position(opp["row"], opp["col"])

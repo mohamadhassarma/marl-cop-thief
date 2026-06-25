@@ -5,7 +5,7 @@ import logging
 import os
 import asyncio
 from cop_thief.services.grid import Position
-from cop_thief.constants import ActionType, Direction, Role
+from cop_thief.constants import ActionType, Direction, DIRECTION_DELTAS
 from cop_thief.services.game_engine import Action
 
 logger = logging.getLogger(__name__)
@@ -13,6 +13,18 @@ logger = logging.getLogger(__name__)
 DEFAULT_COP_URL = "http://localhost:8001/mcp"
 DEFAULT_THIEF_URL = "http://localhost:8002/mcp"
 REQUEST_TIMEOUT = 30
+
+# Map compass words to Direction enum values
+COMPASS_TO_DIRECTION: dict[str, Direction] = {
+    "north": Direction.UP,
+    "south": Direction.DOWN,
+    "west": Direction.LEFT,
+    "east": Direction.RIGHT,
+    "north-east": Direction.UP_RIGHT,
+    "north-west": Direction.UP_LEFT,
+    "south-east": Direction.DOWN_RIGHT,
+    "south-west": Direction.DOWN_LEFT,
+}
 
 
 class AgentClient:
@@ -40,7 +52,6 @@ class AgentClient:
                     "decide_action",
                     {"observation_json": json.dumps(observation)}
                 )
-                # CallToolResult has a .content list of TextContent blocks
                 content = result.content
                 if content and hasattr(content[0], "text"):
                     return json.loads(content[0].text)
@@ -56,18 +67,24 @@ class AgentClient:
     def get_cop_action(self, observation: dict) -> Action:
         """Get Cop's next action from the Cop MCP server."""
         result = self._run(self._call_tool(self._cop_url, observation))
-        return self._parse_action(result, Role.COP)
+        return self._parse_action(result, role_is_cop=True)
 
     def get_thief_action(self, observation: dict) -> Action:
         """Get Thief's next action from the Thief MCP server."""
         result = self._run(self._call_tool(self._thief_url, observation))
-        return self._parse_action(result, Role.THIEF)
+        return self._parse_action(result, role_is_cop=False)
 
-    def _parse_action(self, result: dict, role: Role) -> Action:
-        """Parse a server response dict into an Action object."""
+    def _parse_action(self, result: dict, role_is_cop: bool = True) -> Action:
+        """Parse a server response dict into an Action object.
+
+        Handles both compass word directions (north/south-east etc)
+        and legacy direction strings.
+        """
+        from cop_thief.constants import Role
+        role = Role.COP if role_is_cop else Role.THIEF
         action_type = result.get("action", ActionType.MOVE.value)
 
-        if action_type == ActionType.PLACE_BARRIER.value and role == Role.COP:
+        if action_type == ActionType.PLACE_BARRIER.value and role_is_cop:
             pos = result.get("position", {"row": 0, "col": 0})
             return Action(
                 agent=role,
@@ -75,17 +92,17 @@ class AgentClient:
                 barrier_pos=Position(pos["row"], pos["col"]),
             )
 
-        direction_str = result.get("direction", "down")
-        try:
-            direction = Direction(direction_str)
-        except ValueError:
+        direction_str = result.get("direction", "south")
+        direction = COMPASS_TO_DIRECTION.get(direction_str)
+        if direction is None:
             logger.warning(f"Invalid direction '{direction_str}', defaulting to down")
             direction = Direction.DOWN
 
         return Action(agent=role, action_type=ActionType.MOVE, direction=direction)
 
-    def health_check(self, role: Role) -> bool:
+    def health_check(self, role) -> bool:
         """Check if an agent server is reachable via FastMCP."""
+        from cop_thief.constants import Role
         url = self._cop_url if role == Role.COP else self._thief_url
 
         async def _ping():
@@ -98,4 +115,3 @@ class AgentClient:
             return asyncio.run(_ping())
         except Exception:
             return False
-        

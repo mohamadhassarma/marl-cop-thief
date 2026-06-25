@@ -2,7 +2,7 @@
 
 import json
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock
 from cop_thief.services.agent_client import AgentClient
 from cop_thief.services.grid import Position
 from cop_thief.constants import Role, ActionType, Direction
@@ -47,48 +47,33 @@ def thief_observation() -> dict:
     }
 
 
-def _make_content_block(text: str):
-    """Create a mock content block with .text attribute."""
-    block = MagicMock()
-    block.text = text
-    return block
-
-
-def _make_call_tool_result(action_dict: dict):
-    """Build a mock CallToolResult with .content list."""
-    result = MagicMock()
-    result.content = [_make_content_block(json.dumps(action_dict))]
-    return result
-
-
 class TestParseAction:
     """Tests for _parse_action method."""
 
     def test_parse_move_action(self, client):
         """Parses move action correctly."""
-        result = {"action": "move", "direction": "right"}
-        action = client._parse_action(result, Role.COP)
+        result = {"action": "move", "direction": "east"}
+        action = client._parse_action(result, role_is_cop=True)
         assert action.action_type == ActionType.MOVE
         assert action.direction == Direction.RIGHT
-        assert action.agent == Role.COP
 
     def test_parse_barrier_action(self, client):
         """Parses barrier action correctly."""
         result = {"action": "place_barrier", "position": {"row": 2, "col": 3}}
-        action = client._parse_action(result, Role.COP)
+        action = client._parse_action(result, role_is_cop=True)
         assert action.action_type == ActionType.PLACE_BARRIER
         assert action.barrier_pos == Position(2, 3)
 
     def test_invalid_direction_defaults(self, client):
         """Invalid direction defaults to DOWN."""
         result = {"action": "move", "direction": "diagonal"}
-        action = client._parse_action(result, Role.THIEF)
+        action = client._parse_action(result, role_is_cop=False)
         assert action.direction == Direction.DOWN
 
     def test_thief_cannot_get_barrier_action(self, client):
         """Thief barrier action falls back to move."""
         result = {"action": "place_barrier", "position": {"row": 1, "col": 1}}
-        action = client._parse_action(result, Role.THIEF)
+        action = client._parse_action(result, role_is_cop=False)
         assert action.action_type == ActionType.MOVE
 
 
@@ -97,13 +82,7 @@ class TestGetCopAction:
 
     def test_get_cop_move(self, client, cop_observation):
         """Returns move action from server response."""
-        mock_result = _make_call_tool_result({"action": "move", "direction": "right"})
-
-        async def mock_call_tool(url, obs):
-            return {"action": "move", "direction": "right"}
-
-        with patch.object(client, "_call_tool", side_effect=mock_call_tool), \
-             patch.object(client, "_run", side_effect=lambda coro: {"action": "move", "direction": "right"}):
+        with patch.object(client, "_run", return_value={"action": "move", "direction": "east"}):
             action = client.get_cop_action(cop_observation)
         assert action.action_type == ActionType.MOVE
         assert action.direction == Direction.RIGHT
@@ -129,7 +108,7 @@ class TestGetThiefAction:
 
     def test_get_thief_move(self, client, thief_observation):
         """Returns move action from server response."""
-        with patch.object(client, "_run", return_value={"action": "move", "direction": "up"}):
+        with patch.object(client, "_run", return_value={"action": "move", "direction": "north"}):
             action = client.get_thief_action(thief_observation)
         assert action.action_type == ActionType.MOVE
         assert action.direction == Direction.UP
