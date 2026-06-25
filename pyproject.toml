@@ -31,6 +31,7 @@ omit = [
     "*/tests/*",
     "src/cop_thief/services/cop_server.py",
     "src/cop_thief/services/thief_server.py",
+    "src/cop_thief/services/reporter.py",
 ]
 
 [tool.coverage.report]
