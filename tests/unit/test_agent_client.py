@@ -2,7 +2,7 @@
 
 import json
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from cop_thief.services.agent_client import AgentClient
 from cop_thief.services.grid import Position
 from cop_thief.constants import Role, ActionType, Direction
@@ -47,16 +47,18 @@ def thief_observation() -> dict:
     }
 
 
-def _mock_response(action_dict: dict) -> MagicMock:
-    """Build a mock httpx response returning given action."""
-    mock_resp = MagicMock()
-    mock_resp.raise_for_status = MagicMock()
-    mock_resp.json.return_value = {
-        "result": {
-            "content": [{"text": json.dumps(action_dict)}]
-        }
-    }
-    return mock_resp
+def _make_content_block(text: str):
+    """Create a mock content block with .text attribute."""
+    block = MagicMock()
+    block.text = text
+    return block
+
+
+def _make_call_tool_result(action_dict: dict):
+    """Build a mock CallToolResult with .content list."""
+    result = MagicMock()
+    result.content = [_make_content_block(json.dumps(action_dict))]
+    return result
 
 
 class TestParseAction:
@@ -91,41 +93,43 @@ class TestParseAction:
 
 
 class TestGetCopAction:
-    """Tests for get_cop_action with mocked HTTP."""
+    """Tests for get_cop_action with mocked FastMCP client."""
 
     def test_get_cop_move(self, client, cop_observation):
         """Returns move action from server response."""
-        mock_resp = _mock_response({"action": "move", "direction": "right"})
-        with patch("httpx.post", return_value=mock_resp):
+        mock_result = _make_call_tool_result({"action": "move", "direction": "right"})
+
+        async def mock_call_tool(url, obs):
+            return {"action": "move", "direction": "right"}
+
+        with patch.object(client, "_call_tool", side_effect=mock_call_tool), \
+             patch.object(client, "_run", side_effect=lambda coro: {"action": "move", "direction": "right"}):
             action = client.get_cop_action(cop_observation)
         assert action.action_type == ActionType.MOVE
         assert action.direction == Direction.RIGHT
 
     def test_get_cop_barrier(self, client, cop_observation):
         """Returns barrier action from server response."""
-        mock_resp = _mock_response({
-            "action": "place_barrier",
-            "position": {"row": 3, "col": 3}
-        })
-        with patch("httpx.post", return_value=mock_resp):
+        with patch.object(client, "_run", return_value={
+            "action": "place_barrier", "position": {"row": 3, "col": 3}
+        }):
             action = client.get_cop_action(cop_observation)
         assert action.action_type == ActionType.PLACE_BARRIER
         assert action.barrier_pos == Position(3, 3)
 
     def test_server_error_raises(self, client, cop_observation):
         """RuntimeError raised when server is unreachable."""
-        with patch("httpx.post", side_effect=Exception("Connection refused")):
+        with patch.object(client, "_run", side_effect=RuntimeError("Connection refused")):
             with pytest.raises(RuntimeError):
                 client.get_cop_action(cop_observation)
 
 
 class TestGetThiefAction:
-    """Tests for get_thief_action with mocked HTTP."""
+    """Tests for get_thief_action with mocked FastMCP client."""
 
     def test_get_thief_move(self, client, thief_observation):
         """Returns move action from server response."""
-        mock_resp = _mock_response({"action": "move", "direction": "up"})
-        with patch("httpx.post", return_value=mock_resp):
+        with patch.object(client, "_run", return_value={"action": "move", "direction": "up"}):
             action = client.get_thief_action(thief_observation)
         assert action.action_type == ActionType.MOVE
         assert action.direction == Direction.UP
@@ -134,14 +138,13 @@ class TestGetThiefAction:
 class TestHealthCheck:
     """Tests for health_check method."""
 
-    def test_healthy_cop_server(self, client):
-        """Returns True when cop server responds 200."""
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200
-        with patch("httpx.get", return_value=mock_resp):
+    def test_healthy_server(self, client):
+        """Returns True when server responds."""
+        with patch.object(client, "_run", return_value=True):
             assert client.health_check(Role.COP) is True
 
     def test_unhealthy_server(self, client):
         """Returns False when server is unreachable."""
-        with patch("httpx.get", side_effect=Exception("refused")):
+        with patch("asyncio.run", side_effect=Exception("refused")):
             assert client.health_check(Role.THIEF) is False
+            
