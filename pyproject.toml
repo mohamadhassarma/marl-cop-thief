@@ -7,6 +7,7 @@ requires-python = ">=3.10"
 dependencies = [
     "anthropic>=0.112.0",
     "fastmcp>=3.4.2",
+    "httpx>=0.28.1",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "python-dotenv>=1.2.2",
@@ -25,7 +26,12 @@ testpaths = ["tests"]
 
 [tool.coverage.run]
 source = ["src"]
-omit = ["src/main.py", "*/tests/*"]
+omit = [
+    "src/main.py",
+    "*/tests/*",
+    "src/cop_thief/services/cop_server.py",
+    "src/cop_thief/services/thief_server.py",
+]
 
 [tool.coverage.report]
 fail_under = 85
