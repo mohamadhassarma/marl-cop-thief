@@ -1,11 +1,12 @@
 """API Gatekeeper — centralized rate limiting for all LLM API calls."""
 
-import time
 import json
 import logging
+import time
 from collections import deque
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 

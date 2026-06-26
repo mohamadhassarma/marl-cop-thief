@@ -1,7 +1,8 @@
 """Grid — manages the 2D game board, positions, and barriers."""
 
 from dataclasses import dataclass, field
-from cop_thief.constants import Direction, DIRECTION_DELTAS
+
+from cop_thief.constants import DIRECTION_DELTAS, Direction
 
 
 @dataclass

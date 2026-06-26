@@ -2,8 +2,9 @@
 
 import random
 from dataclasses import dataclass, field
+
+from cop_thief.constants import ActionType, Direction, Role, SubGameResult
 from cop_thief.services.grid import Grid, Position
-from cop_thief.constants import Direction, Role, SubGameResult, ActionType
 from cop_thief.shared.config import ConfigManager
 
 

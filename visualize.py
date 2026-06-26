@@ -67,7 +67,7 @@ def plot_moves(results: dict, output_dir: Path) -> None:
     ax.set_title("Moves per Sub-game (Blue=Cop Win, Red=Thief Win)")
     ax.legend()
 
-    for i, (idx, m) in enumerate(zip(indices, moves)):
+    for i, (_, m) in enumerate(zip(indices, moves, strict=False)):
         ax.text(i, m + 0.3, str(m), ha="center", fontsize=10)
 
     plt.tight_layout()

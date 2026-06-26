@@ -5,12 +5,13 @@ No business logic should be called directly outside of the SDK.
 """
 
 import logging
-from cop_thief.services.game_engine import GameEngine
+
+from cop_thief.constants import Role
 from cop_thief.services.agent_client import AgentClient
+from cop_thief.services.game_engine import GameEngine
 from cop_thief.services.grid import Position
 from cop_thief.shared.config import ConfigManager
 from cop_thief.shared.version import VERSION
-from cop_thief.constants import Role
 
 logger = logging.getLogger(__name__)
 

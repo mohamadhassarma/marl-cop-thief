@@ -119,7 +119,7 @@ class TestHealthCheck:
 
     def test_healthy_server(self, client):
         """Returns True when server responds."""
-        with patch.object(client, "_run", return_value=True):
+        with patch("asyncio.run", return_value=True):
             assert client.health_check(Role.COP) is True
 
     def test_unhealthy_server(self, client):

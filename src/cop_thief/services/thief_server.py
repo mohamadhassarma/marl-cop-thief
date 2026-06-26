@@ -1,15 +1,18 @@
 """Thief MCP Server — FastMCP server for the Thief agent (inter-group compatible)."""
 
-import os
 import json
 import logging
+import os
+import random
 from pathlib import Path
+
 from dotenv import load_dotenv
 from fastmcp import FastMCP
-from cop_thief.services.strategy import thief_best_move, is_trapped, observation_to_positions
+
+from cop_thief.constants import COMPASS_WORDS, DIRECTION_DELTAS, ActionType
 from cop_thief.services.grid import Grid, Position
+from cop_thief.services.strategy import is_trapped, observation_to_positions
 from cop_thief.shared.config import ConfigManager
-from cop_thief.constants import ActionType, COMPASS_WORDS
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -21,24 +24,68 @@ _config = ConfigManager(str(_root / "config" / "config.json"))
 _auth_token = os.environ.get("THIEF_MCP_TOKEN", "")
 
 
+def _extract_position(pos) -> dict:
+    """Extract row/col from various position formats."""
+    if isinstance(pos, dict):
+        return {"row": pos.get("row", 0), "col": pos.get("col", 0)}
+    if isinstance(pos, (list, tuple)) and len(pos) >= 2:
+        return {"row": pos[0], "col": pos[1]}
+    return {"row": 0, "col": 0}
+
+
+def _extract_barriers(barriers) -> list:
+    """Extract barriers from various formats."""
+    if not barriers:
+        return []
+    result = []
+    for b in barriers:
+        if isinstance(b, dict):
+            result.append({"row": b.get("row", 0), "col": b.get("col", 0)})
+        elif isinstance(b, (list, tuple)) and len(b) >= 2:
+            result.append({"row": b[0], "col": b[1]})
+    return result
+
+
 def _build_observation(obs: dict) -> dict:
-    """Normalize observation from either internal or inter-group format."""
-    if "cop" in obs and "thief" in obs:
+    """Normalize observation from any format to internal format."""
+    if not isinstance(obs, dict):
         return {
-            "my_position": obs["thief"],
-            "cop_last_known": obs["cop"],
-            "barriers": obs.get("barriers", []),
-            "moves_remaining": 25 - obs.get("turn", 0),
+            "my_position": {"row": 4, "col": 4},
+            "cop_last_known": {"row": 0, "col": 0},
+            "barriers": [],
+            "moves_remaining": 25,
         }
-    return obs
+    thief_pos = _extract_position(obs.get("thief", {"row": 4, "col": 4}))
+    cop_pos = _extract_position(obs.get("cop", {"row": 0, "col": 0}))
+    barriers = _extract_barriers(obs.get("barriers", []))
+    turn = obs.get("turn", 0)
+    return {
+        "my_position": thief_pos,
+        "cop_last_known": cop_pos,
+        "barriers": barriers,
+        "moves_remaining": 25 - turn,
+    }
+
+
+def _scored_moves(grid: Grid, thief_pos: Position, cop_pos: Position) -> list:
+    """Return all valid moves sorted by distance from cop (ascending = worse)."""
+    moves = []
+    for direction, (dr, dc) in DIRECTION_DELTAS.items():
+        neighbor = Position(thief_pos.row + dr, thief_pos.col + dc)
+        if not grid.is_valid(neighbor) or grid.is_barrier(neighbor):
+            continue
+        dist = max(
+            abs(neighbor.row - cop_pos.row),
+            abs(neighbor.col - cop_pos.col)
+        )
+        moves.append((dist, direction))
+    moves.sort(key=lambda x: x[0], reverse=True)
+    return moves
 
 
 @mcp.tool()
 def request_move(observation: dict, auth_token: str = "") -> str:
     """Decide Thief's next action — inter-group compatible tool.
-
-    Uses max-distance evasion with 8-way movement.
-    Returns [INTENT: MOVE] prose with compass direction.
 
     Args:
         observation: Game state dict.
@@ -63,54 +110,36 @@ def request_move(observation: dict, auth_token: str = "") -> str:
         if is_trapped(grid, my_pos):
             return "[INTENT: HOLD] I am trapped with no valid moves."
 
-        best_dir = thief_best_move(grid, my_pos, cop_pos)
-        if best_dir:
-            compass = COMPASS_WORDS[best_dir]
-            logger.info(f"Thief evade → {compass} | pos:{my_pos} cop:{cop_pos}")
-            return (
-                f"[INTENT: MOVE] Evading {compass} to maximize distance from cop. "
-                f"My position {my_pos}, cop at {cop_pos}."
-            )
+        moves = _scored_moves(grid, my_pos, cop_pos)
+        if not moves:
+            return "[INTENT: HOLD] No valid moves available."
 
-        return "[INTENT: HOLD] No safe move available."
+
+        chosen = moves[1][1] if len(moves) > 1 and random.random() < 0.4 else moves[0][1]
+
+        compass = COMPASS_WORDS[chosen]
+        logger.info(f"Thief evade → {compass}")
+        return (
+            f"[INTENT: MOVE] Evading {compass} to avoid the cop. "
+            f"My position {my_pos}, cop at {cop_pos}."
+        )
 
     except Exception as e:
-        logger.error(f"Thief decision error: {e}")
+        logger.error(f"Thief decision error: {e}", exc_info=True)
         return "[INTENT: MOVE] Moving north as fallback."
 
 
 @mcp.tool()
 def decide_action(observation_json: str) -> str:
-    """Legacy internal tool for backward compatibility.
-
-    Args:
-        observation_json: JSON string of thief observation dict.
-
-    Returns:
-        JSON string with action type and direction.
-    """
+    """Legacy internal tool for backward compatibility."""
     try:
         observation = json.loads(observation_json)
         result = request_move(observation, _auth_token)
-        if "north-east" in result:
-            direction = "north-east"
-        elif "north-west" in result:
-            direction = "north-west"
-        elif "south-east" in result:
-            direction = "south-east"
-        elif "south-west" in result:
-            direction = "south-west"
-        elif "north" in result:
-            direction = "north"
-        elif "south" in result:
-            direction = "south"
-        elif "east" in result:
-            direction = "east"
-        elif "west" in result:
-            direction = "west"
-        else:
-            direction = "north"
-        return json.dumps({"action": ActionType.MOVE.value, "direction": direction})
+        for compass in ["north-east", "north-west", "south-east", "south-west",
+                        "north", "south", "east", "west"]:
+            if compass in result:
+                return json.dumps({"action": ActionType.MOVE.value, "direction": compass})
+        return json.dumps({"action": ActionType.MOVE.value, "direction": "north"})
     except Exception as e:
         logger.error(f"Legacy thief error: {e}")
         return json.dumps({"action": ActionType.MOVE.value, "direction": "north"})

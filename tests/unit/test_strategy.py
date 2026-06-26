@@ -1,16 +1,17 @@
 """Unit tests for strategy module (8-way movement)."""
 
 import pytest
+
+from cop_thief.constants import Direction
 from cop_thief.services.grid import Grid, Position
 from cop_thief.services.strategy import (
     bfs_shortest_path,
-    cop_best_move,
     cop_best_barrier,
-    thief_best_move,
+    cop_best_move,
     is_trapped,
     observation_to_positions,
+    thief_best_move,
 )
-from cop_thief.constants import Direction
 
 
 @pytest.fixture

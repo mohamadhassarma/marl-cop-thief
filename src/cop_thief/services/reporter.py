@@ -1,9 +1,9 @@
 """Reporter — sends automated JSON game report via Gmail API."""
 
+import base64
 import json
 import logging
 import os
-import base64
 from email.mime.text import MIMEText
 from pathlib import Path
 
@@ -40,9 +40,9 @@ class GmailReporter:
             RuntimeError: If authentication fails.
         """
         try:
+            from google.auth.transport.requests import Request
             from google.oauth2.credentials import Credentials
             from googleapiclient.discovery import build
-            from google.auth.transport.requests import Request
 
             if not Path(self._token_path).exists():
                 raise FileNotFoundError(

@@ -1,7 +1,9 @@
 """Unit tests for GmailReporter."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from cop_thief.services.reporter import GmailReporter
 
 

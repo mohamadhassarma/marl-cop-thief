@@ -1,12 +1,13 @@
 """Agent Client — connects the game engine to Cop and Thief MCP servers."""
 
+import asyncio
 import json
 import logging
 import os
-import asyncio
-from cop_thief.services.grid import Position
-from cop_thief.constants import ActionType, Direction, DIRECTION_DELTAS
+
+from cop_thief.constants import ActionType, Direction
 from cop_thief.services.game_engine import Action
+from cop_thief.services.grid import Position
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ class AgentClient:
                 return {}
         except Exception as e:
             logger.error(f"MCP tool call failed ({url}): {e}")
-            raise RuntimeError(f"Agent server error: {e}")
+            raise RuntimeError(f"Agent server error: {e}") from e
 
     def _run(self, coro) -> dict:
         """Run async coroutine safely from sync context."""

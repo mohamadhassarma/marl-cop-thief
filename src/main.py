@@ -4,6 +4,7 @@ import argparse
 import json
 import logging
 import sys
+
 from cop_thief.sdk.sdk import CopThiefSDK
 from cop_thief.services.cop_server import run_cop_server
 from cop_thief.services.thief_server import run_thief_server
@@ -75,7 +76,7 @@ def run_game(args: argparse.Namespace) -> None:
     results = sdk.run_full_game()
 
     print(f"\n{'='*50}")
-    print(f"  FINAL SCORES")
+    print("  FINAL SCORES")
     print(f"  Cop:   {results['totals']['cop']} pts")
     print(f"  Thief: {results['totals']['thief']} pts")
     print(f"{'='*50}\n")

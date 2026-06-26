@@ -1,8 +1,9 @@
 """Unit tests for ApiGatekeeper."""
 
 import json
+
 import pytest
-from pathlib import Path
+
 from cop_thief.shared.gatekeeper import ApiGatekeeper, RateLimitConfig
 
 

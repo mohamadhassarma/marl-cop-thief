@@ -1,8 +1,10 @@
 """Unit tests for ConfigManager."""
 
 import json
-import pytest
 from pathlib import Path
+
+import pytest
+
 from cop_thief.shared.config import ConfigManager
 
 

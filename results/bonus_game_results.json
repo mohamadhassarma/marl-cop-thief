@@ -1,0 +1,81 @@
+{
+  "report_type": "bonus_game",
+  "groups": {
+    "group_1": "NajAmjad",
+    "group_2": "Mohamad-Salih"
+  },
+  "github_repo_group_1": "https://github.com/najikay/mcp-marl-cop-thief",
+  "github_repo_group_2": "https://github.com/mohamadhassarma/marl-cop-thief",
+  "mcp_url_group_1_cop": "https://stated-prairie-fact-reviews.trycloudflare.com/mcp",
+  "mcp_url_group_1_thief": "https://sorts-comparisons-aye-subsidiary.trycloudflare.com/mcp",
+  "mcp_url_group_2_cop": "https://coveting-elevator-municipal.ngrok-free.dev/mcp",
+  "mcp_url_group_2_thief": "https://traditions-phrase-beans-former.trycloudflare.com/mcp",
+  "timezone": "Asia/Jerusalem",
+  "students_group_1": [
+    "Amjad Abd El Rahim",
+    "Naji Kayal"
+  ],
+  "students_group_2": [
+    "Mohamad Hassarma",
+    "Salih Rabah"
+  ],
+  "sub_games": [
+    {
+      "sub_game_index": 0,
+      "result": "cop_win",
+      "moves_taken": 2,
+      "we_are_cop": false,
+      "cop_score": 20,
+      "thief_score": 5
+    },
+    {
+      "sub_game_index": 1,
+      "result": "cop_win",
+      "moves_taken": 4,
+      "we_are_cop": false,
+      "cop_score": 20,
+      "thief_score": 5
+    },
+    {
+      "sub_game_index": 2,
+      "result": "cop_win",
+      "moves_taken": 2,
+      "we_are_cop": false,
+      "cop_score": 20,
+      "thief_score": 5
+    },
+    {
+      "sub_game_index": 3,
+      "result": "cop_win",
+      "moves_taken": 19,
+      "we_are_cop": true,
+      "cop_score": 20,
+      "thief_score": 5
+    },
+    {
+      "sub_game_index": 4,
+      "result": "thief_win",
+      "moves_taken": 25,
+      "we_are_cop": true,
+      "cop_score": 5,
+      "thief_score": 10
+    },
+    {
+      "sub_game_index": 5,
+      "result": "thief_win",
+      "moves_taken": 25,
+      "we_are_cop": true,
+      "cop_score": 5,
+      "thief_score": 10
+    }
+  ],
+  "totals_by_group": {
+    "NajAmjad": 85,
+    "Mohamad-Salih": 45
+  },
+  "bonus_claim": {
+    "NajAmjad": 10,
+    "Mohamad-Salih": 7
+  },
+  "mutual_agreement": null
+}

@@ -1,11 +1,12 @@
 """Unit tests for GameEngine."""
 
 import json
+
 import pytest
-from pathlib import Path
-from cop_thief.services.game_engine import GameEngine, Action
+
+from cop_thief.constants import ActionType, Direction, Role, SubGameResult
+from cop_thief.services.game_engine import Action, GameEngine
 from cop_thief.services.grid import Position
-from cop_thief.constants import Direction, Role, SubGameResult, ActionType
 from cop_thief.shared.config import ConfigManager
 
 

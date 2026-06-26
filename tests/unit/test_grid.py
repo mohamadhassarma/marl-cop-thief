@@ -1,8 +1,9 @@
 """Unit tests for the Grid and Position classes."""
 
 import pytest
-from cop_thief.services.grid import Grid, Position
+
 from cop_thief.constants import Direction
+from cop_thief.services.grid import Grid, Position
 
 
 class TestPosition:

@@ -1,11 +1,12 @@
 """Unit tests for CopThiefSDK."""
 
 import json
+from unittest.mock import patch
+
 import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+
+from cop_thief.constants import ActionType, Direction, Role, SubGameResult
 from cop_thief.sdk.sdk import CopThiefSDK
-from cop_thief.constants import SubGameResult, Role, ActionType, Direction
 from cop_thief.services.game_engine import Action
 from cop_thief.services.grid import Position
 
